@@ -1,0 +1,30 @@
+project: "sorted_00_sim_lq"
+genbank: "yeast_chromosome_xiv.gb"
+run: 10
+
+generate_testbeds:
+    cds_number : 50
+    constructs_number: [10,50,100]
+    parts : [5,10,20]
+    constructs_similarity : 0.0
+    parts_similarity : 0.0
+    mutation_method : "last"
+
+badreads:
+    quantity : [5x,10x,50x,100x]
+    error_model: "nanopore"
+    qscore_model: "nanopore"
+    glitches: "1000,100,100"
+    junk_reads: 5
+    random_reads: 5
+    chimeras: 10
+    identity: 75,90,8
+    start_adapter_seq: ' "" '
+    end_adapter_seq: ' "" '
+
+combinatorial_assembly:
+    max_parts: 5
+
+nanogate:
+     error_rate : ["001","010","030"]
+     jaccard_thresholds: ["00","001","005","01"]

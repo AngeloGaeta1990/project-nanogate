@@ -1,0 +1,920 @@
+# snakefile for mooda_analysis
+# written by: Angelo Gaeta Giovanni Stracquadanio
+
+workdir: "../"
+configfile: "workflows/config.yaml"
+PROJECTS= config["project"]
+GENBANKS =  config["genbank"]
+DEPTHS = config["badreads"]["quantity"]
+CONSTRUCTS = config["generate_testbeds"]["constructs_number"]
+PARTS = config['generate_testbeds']["parts"]
+JACCARD_THRESHOLDS = config['nanogate']["jaccard_thresholds"]
+ERROR_RATES = config['nanogate']["error_rate"]
+RUNS = config["run"]
+RUNS = list(range(RUNS))
+
+rule all:
+    input:
+           expand("data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_unfiltered/distribution.pdf", project = PROJECTS, depht= DEPTHS,
+                  run= RUNS, error_rate =ERROR_RATES, constructs = CONSTRUCTS, parts = PARTS),
+           expand("data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_precision.pdf",
+                  project = PROJECTS, depht= DEPTHS, run= RUNS, error_rate =ERROR_RATES ),
+           expand("data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_recall.pdf",
+                  project = PROJECTS, depht= DEPTHS, run= RUNS, error_rate =ERROR_RATES ),
+           expand("data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_mismatch_per_error.pdf",
+                  project = PROJECTS, depht= DEPTHS, run= RUNS, error_rate =ERROR_RATES ),
+           expand("data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_good_reads_ratio.pdf",
+                  project = PROJECTS, depht= DEPTHS, run= RUNS, error_rate =ERROR_RATES ),
+           expand("data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_precision_per_construct.pdf",
+                  project = PROJECTS, depht= DEPTHS, run= RUNS, error_rate =ERROR_RATES ),
+           expand("data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_recall_per_construct.pdf",
+                  project = PROJECTS, depht= DEPTHS, run= RUNS, error_rate =ERROR_RATES ),
+           expand("data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_mismatch_per_error_per_construct.pdf",
+                  project = PROJECTS, depht= DEPTHS, run= RUNS, error_rate =ERROR_RATES ),
+           expand("data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_reads_number_per_construct.pdf",
+                  project = PROJECTS, depht= DEPTHS, run= RUNS, error_rate =ERROR_RATES ),
+           # expand("data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_precision.pdf"
+           #           ,project = PROJECTS, depht= DEPTHS, run= RUNS),
+           # expand("data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_recall.pdf"
+           #           ,project = PROJECTS, depht= DEPTHS, run= RUNS),
+           # expand("data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_mapping_quality.pdf"
+           #           ,project = PROJECTS, depht= DEPTHS, run= RUNS),
+           # expand("data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_alignment_score.pdf"
+           #           ,project = PROJECTS, depht= DEPTHS, run= RUNS),
+           # expand("data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_real_time.pdf"
+           #           ,project = PROJECTS, depht= DEPTHS, run= RUNS),
+           # expand("data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_cpu_time.pdf"
+           #           ,project = PROJECTS, depht= DEPTHS, run= RUNS),
+
+
+
+           expand("data/processed/{project}/nanogate/stats/time_plot.pdf", project = PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/kmer_length.pdf", project = PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/precision_per_result.pdf",project = PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/recall_per_result.pdf", project = PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/mismatch_per_error.pdf",project = PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/good_reads_ratio.pdf", project = PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/10_reads_constructs_percentage.pdf", project =PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/precision_per_construct.pdf",project = PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/recall_per_construct.pdf", project = PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/mismatch_per_error_per_construct.pdf",project = PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/reads_number_per_construct.pdf", project = PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/10_reads_constructs.pdf", project =PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/parts_order_ratio.pdf", project = PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/parts_order_precision.pdf", project = PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/parts_order_recall.pdf",project = PROJECTS),
+           expand("data/processed/{project}/nanogate/stats/contaminant_discovery.pdf",project = PROJECTS),
+
+           # expand("data/processed/{project}/minimap2/stats/precision.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/minimap2/stats/recall.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/minimap2/stats/mapping_quality.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/minimap2/stats/alignment_score.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/minimap2/stats/real_time.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/minimap2/stats/cpu_time.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/minimap2/stats/combinatorial_precision.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/minimap2/stats/combinatorial_recall.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/minimap2/stats/combinatorial_mapping_quality.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/minimap2/stats/combinatorial_alignment_score.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/minimap2/stats/combinatorial_real_time.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/minimap2/stats/combinatorial_cpu_time.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/comparison/stats/5_parts_precision_comparison.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/comparison/stats/5_parts_recall_comparison.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/comparison/stats/5_parts_time_comparison.pdf", project = PROJECTS),
+           # expand("data/processed/{project}/comparison/stats/minimap2_nanogate_precision_comparison.pdf",project = PROJECTS),
+           # expand("data/processed/{project}/comparison/stats/minimap2_nanogate_recall_comparison.pdf",project = PROJECTS),
+           # expand("data/processed/{project}/comparison/stats/minimap2_nanogate_time_comparison.pdf",project = PROJECTS)
+
+"""
+Rule to create constructs and parts
+"""
+rule run_testbeds_generators:
+    input: expand('data/external/{project}/source_cds/{genbank}',project = PROJECTS, genbank = GENBANKS)
+
+    output:
+          constructs = 'data/processed/{project}/run_{run}/constructs/{constructs}_constructs/{parts}_parts/{parts}_parts_constructs.fasta',
+          parts_library = 'data/processed/{project}/run_{run}/parts/{constructs}_constructs/{parts}_parts_library/{parts}_parts_library.fasta',
+          verification_table = 'data/processed/{project}/run_{run}/verification_tables/{constructs}_constructs/{parts}_parts_verification_tables/{parts}_parts_verification_table.csv',
+          json_cloned_parts ='data/processed/{project}/run_{run}/parts/{constructs}_constructs/{parts}_parts_library/{parts}_cloned_parts.json'
+
+
+    params:
+            parts = "{parts}",
+            constructs_number = "{constructs}",
+            cds_number = config["generate_testbeds"]["cds_number"],
+            clone_parts_amount = config["generate_testbeds"]["clone_parts_amount"],
+            parts_similarity = config["generate_testbeds"]["parts_similarity"],
+            mutation_method = config["generate_testbeds"]["mutation_method"]
+
+    threads: 1
+
+    shell:
+           """
+           python scripts/pre_processing/testbeds_generator.py generate-testbeds \
+           {input} {output.constructs} {output.parts_library} \
+           {output.verification_table}  {output.json_cloned_parts} \
+           --cds-number {params.cds_number} --constructs-number {params.constructs_number}  -l {params.parts} \
+            --constructs-similarity {params.clone_parts_amount} --parts-similarity {params.parts_similarity}\
+            --mutation-method {params.mutation_method}
+           """
+
+"""
+Rule to generated reads
+"""
+
+rule  run_badreads:
+     input:
+           'data/processed/{project}/run_{run}/constructs/{constructs}_constructs/{parts}_parts/{parts}_parts_constructs.fasta',
+
+     output:
+            'data/processed/{project}/run_{run}/reads/{depht}_depht/{constructs}_constructs/{parts}_parts/{parts}_parts_reads.fastq.gz',
+
+     params:
+             quantity = '{depht}',
+             error_model = config["badreads"]["error_model"],
+             qscore_model = config["badreads"]["qscore_model"],
+             glitches = config["badreads"]["glitches"],
+             junk_reads = config["badreads"]["junk_reads"],
+             random_reads = config["badreads"]["random_reads"],
+             chimeras = config["badreads"]["chimeras"],
+             identity = config["badreads"]["identity"],
+             start_adapter_seq = config["badreads"]["start_adapter_seq"],
+             end_adapter_seq = config["badreads"]["end_adapter_seq"]
+
+     threads: 1
+
+     shell:
+          """
+           badread simulate --reference {input} --quantity {params.quantity} \
+           --error_model {params.error_model} --qscore_model {params.qscore_model} \
+           --glitches {params.glitches} --junk_reads {params.junk_reads} \
+           --random_reads {params.random_reads} --chimeras {params.chimeras} \
+           --identity {params.identity} --start_adapter_seq {params.start_adapter_seq} \
+           --end_adapter_seq {params.end_adapter_seq} \
+           | gzip > {output}
+           """
+
+
+
+
+"""
+Rule to run raw_nanogate
+"""
+rule run_raw_nanogate:
+  input:
+         construct_reads = 'data/processed/{project}/run_{run}/reads/{depht}_depht/{constructs}_constructs/{parts}_parts/{parts}_parts_reads.fastq.gz',
+         parts_library = 'data/processed/{project}/run_{run}/parts/{constructs}_constructs/{parts}_parts_library/{parts}_parts_library.fasta',
+         json_cloned_parts ='data/processed/{project}/run_{run}/parts/{constructs}_constructs/{parts}_parts_library/{parts}_cloned_parts.json'
+  output:
+         unfiltered_reads ="data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_unfiltered/nanogate_unfiltered_result.txt",
+         raw_log_file ="data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_unfiltered/log_unfiltered.txt",
+         output_distribution = "data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_unfiltered/distribution.pdf"
+  params:
+          parts = "{parts}",
+          error_rare = "{error_rate}",
+          plot_reads = "True"
+  shell:
+        """
+         nanogate raw-nanogate {input.construct_reads} {input.parts_library} {input.json_cloned_parts} \
+        {output.unfiltered_reads} {output.raw_log_file} --plot-filtered-reads {params.plot_reads} \
+        --output-distribution-plot {output.output_distribution} --construct-parts {params.parts} -e {params.error_rare}
+        """
+
+
+"""
+Rule to run filtered_nanogate
+"""
+rule run_filter_nanogate:
+  input:
+        unfiltered_reads ="data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_unfiltered/nanogate_unfiltered_result.txt",
+        raw_log_file ="data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_unfiltered/log_unfiltered.txt"
+
+  output:
+          "data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/jaccard_threshold_{jaccard_threshold}/nanogate_{jaccard_threshold}_result_table.csv",
+
+  params:
+          jaccard_threshold = "{jaccard_threshold}",
+          parts = "{parts}"
+
+  shell:
+        """
+         nanogate filtered-nanogate {input.unfiltered_reads} {input.raw_log_file} {output} \
+        -p {params.parts} -t {params.jaccard_threshold}
+        """
+
+"""
+Rule to run Nanogate sorting
+"""
+rule run_sorting_nanogate:
+    input:
+        filtered_table = "data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/jaccard_threshold_{jaccard_threshold}/nanogate_{jaccard_threshold}_result_table.csv",
+        construct_reads = 'data/processed/{project}/run_{run}/reads/{depht}_depht/{constructs}_constructs/{parts}_parts/{parts}_parts_reads.fastq.gz',
+        parts_library = 'data/processed/{project}/run_{run}/parts/{constructs}_constructs/{parts}_parts_library/{parts}_parts_library.fasta',
+
+    output:
+        "data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/jaccard_threshold_{jaccard_threshold}/nanogate_{jaccard_threshold}_sorted_result_table.csv",
+
+
+    shell:
+        """
+         nanogate sorting-nanogate {input.filtered_table} {input.construct_reads} {input.parts_library} {output}
+        """
+
+
+
+
+
+"""
+Rule to run filtered_nanogate_0_threshold
+"""
+rule run_filter_nanogate_0_threshold:
+  input:
+        unfiltered_reads ="data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_unfiltered/nanogate_unfiltered_result.txt",
+        raw_log_file ="data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_unfiltered/log_unfiltered.txt"
+
+  output:
+          "data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/threshold_0/threshold_0.csv",
+
+  params:
+          jaccard_threshold = "00",
+          parts = "{parts}"
+  shell:
+        """
+         nanogate filtered-nanogate {input.unfiltered_reads} {input.raw_log_file} {output} \
+        -p {params.parts} -t {params.jaccard_threshold}
+        """
+
+
+"""
+Rule to simulate combinatorial assembly
+"""
+rule combinatorial_assembly:
+     input:
+         parts_library = 'data/processed/{project}/run_{run}/parts/{constructs}_constructs/{parts}_parts_library/{parts}_parts_library.fasta',
+         constructs = 'data/processed/{project}/run_{run}/constructs/{constructs}_constructs/{parts}_parts/{parts}_parts_constructs.fasta'
+
+     output:
+         combinatorial_constructs ='data/processed/{project}/run_{run}/combinatorial_assembly/{constructs}_constructs/{parts}_parts_/{parts}_combinatorial_constructs.fasta',
+         combinatorial_verifaction_table ='data/processed/{project}/run_{run}/combinatorial_assembly/{constructs}_constructs/{parts}_parts_/{parts}_verification_table.csv'
+
+     params:
+            parts_number = '{parts}',
+            max_parts = config["combinatorial_assembly"]["max_parts"]
+
+     threads:3
+
+     shell:
+          """
+          python scripts/post_processing/minimap2_parts_assembler.py parts-assembly {input.parts_library} {input.constructs} \
+          {output.combinatorial_constructs} {output.combinatorial_verifaction_table} -p {params.parts_number} -m{params.max_parts}
+          """
+
+
+
+"""
+Rule to run Minimap2
+"""
+rule run_minimap2:
+    input:
+           constructs_reference ='data/processed/{project}/run_{run}/constructs/{constructs}_constructs/{parts}_parts/{parts}_parts_constructs.fasta',
+           constructs_reads = 'data/processed/{project}/run_{run}/reads/{depht}_depht/{constructs}_constructs/{parts}_parts/{parts}_parts_reads.fastq.gz'
+    output:
+           alignment ="data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_alignment.sam",
+           logfile ="data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_logfile.txt"
+
+    threads:3
+
+    shell:
+           """
+           minimap2 -ax map-ont {input.constructs_reference} {input.constructs_reads} > {output.alignment} 2> {output.logfile}
+           """
+
+
+"""
+Rule convert Minimap2 results to csv
+"""
+rule minimap2_to_csv:
+    input:
+         'data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_alignment.sam'
+
+    output:
+          'data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_alignment_table.csv'
+
+    shell:
+          """
+          python scripts/post_processing/minimap2_to_csv.py  minimap2-to-csv {input} {output}
+          """
+
+"""
+Rule to process nanogate result
+"""
+
+rule process_nanogate_results:
+    input:
+          nanogate_sorted_result = "data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/jaccard_threshold_{jaccard_threshold}/nanogate_{jaccard_threshold}_sorted_result_table.csv",
+          verification_table = 'data/processed/{project}/run_{run}/verification_tables/{constructs}_constructs/{parts}_parts_verification_tables/{parts}_parts_verification_table.csv',
+          raw_log_file = "data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_unfiltered/log_unfiltered.txt"
+    output:
+            good_reads ="data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/jaccard_threshold_{jaccard_threshold}/processed_nanogate_{jaccard_threshold}_result_table.csv",
+            bad_reads ="data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/jaccard_threshold_{jaccard_threshold}/bad_reads_{jaccard_threshold}_table.csv"
+    params:
+            jaccard_threshold = '{jaccard_threshold}',
+            construct_number = '{constructs}',
+            error_rate = "{error_rate}",
+            depht = '{depht}',
+            run = '{run}'
+    shell:
+          """
+           python scripts/post_processing/process_table.py process-table \
+           {input.nanogate_sorted_result} {input.verification_table} {input.raw_log_file} {output} \
+           --threshold {params.jaccard_threshold} -c {params.construct_number} -e {params.error_rate} \
+           -d {params.depht} -r {params.run}
+          """
+"""
+Rule to process 0 threshold Nanogate results
+"""
+rule process_0_threshold_results:
+    input:
+          nanogate_filtered_result = "data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/threshold_0/threshold_0.csv",
+          verification_table = 'data/processed/{project}/run_{run}/verification_tables/{constructs}_constructs/{parts}_parts_verification_tables/{parts}_parts_verification_table.csv',
+          raw_log_file = "data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_unfiltered/log_unfiltered.txt"
+    output:
+            good_reads ="data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/threshold_0/threshold_0_pro.csv",
+            bad_reads ="data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/threshold_0/discard_bad_reads_table.csv"
+    params:
+            jaccard_threshold = '00',
+            construct_number = '{constructs}',
+            error_rate = "{error_rate}",
+            depht = '{depht}',
+            run = '{run}'
+    shell:
+          """
+           python scripts/post_processing/process_table.py process-table \
+           {input.nanogate_filtered_result} {input.verification_table} {input.raw_log_file} {output} \
+           --threshold {params.jaccard_threshold} -c {params.construct_number} -e {params.error_rate} \
+           -d {params.depht} -r {params.run}
+          """
+
+"""
+Rule to process Minimap2 results
+"""
+rule process_minimap2_results:
+     input:
+          alignment_csv = 'data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_alignment_table.csv',
+          constructs_reads = 'data/processed/{project}/run_{run}/reads/{depht}_depht/{constructs}_constructs/{parts}_parts/{parts}_parts_reads.fastq.gz',
+          minimap_logfile =  "data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_logfile.txt"
+
+
+     output:
+          'data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_processed_alignment_table.csv'
+
+     params:
+            construct_number = '{constructs}',
+            parts = '{parts}',
+            depth = '{depht}'
+
+     shell:
+          """
+           python scripts/post_processing/minimap2_process_table.py process-table \
+           {input.alignment_csv} {input.constructs_reads} {output} \
+           -l{input.minimap_logfile} -c {params.construct_number} -p {params.parts} -d {params.depth}
+          """
+
+"""
+Rule to run Minimap2 on combinatorial assembly
+"""
+rule minimap2_combinatorial :
+        input:
+           combinatorial_constructs ='data/processed/{project}/run_{run}/combinatorial_assembly/{constructs}_constructs/{parts}_parts_/{parts}_combinatorial_constructs.fasta',
+           constructs_reads = 'data/processed/{project}/run_{run}/reads/{depht}_depht/{constructs}_constructs/{parts}_parts/{parts}_parts_reads.fastq.gz'
+        output:
+               alignment ="data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_combinatorial_alignment.sam",
+               logfile ="data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_combinatorial_logfile.txt"
+        shell:
+               """
+               minimap2 -ax map-ont {input.combinatorial_constructs} {input.constructs_reads} > {output.alignment} 2> {output.logfile}
+               """
+
+"""
+Rule convert Minimap2 combinatorial results to csv
+"""
+rule minimap2_combinatorial_to_csv:
+    input:
+           "data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_combinatorial_alignment.sam"
+    output:
+          'data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_combinatorial_alignment_table.csv'
+
+    shell:
+          """
+          python scripts/post_processing/minimap2_to_csv.py  minimap2-to-csv {input} {output}
+          """
+"""
+Rule to process Minimap2 results
+"""
+rule process_minimap2_combinatorial_results:
+     input:
+          combinatorial_alignment_csv = "data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_combinatorial_alignment_table.csv",
+          constructs_reads = 'data/processed/{project}/run_{run}/reads/{depht}_depht/{constructs}_constructs/{parts}_parts/{parts}_parts_reads.fastq.gz',
+          minimap_combinatorial_logfile =  "data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_combinatorial_logfile.txt"
+
+     output:
+          'data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_processed_combinatorial_alignment_table.csv'
+
+     params:
+            construct_number = '{constructs}',
+            parts = '{parts}',
+            depth = '{depht}'
+     shell:
+          """
+           python scripts/post_processing/minimap2_process_table.py process-table \
+           {input.combinatorial_alignment_csv} {input.constructs_reads} {output} \
+           -l{input.minimap_combinatorial_logfile} -c {params.construct_number} -p {params.parts} -d {params.depth}
+          """
+
+"""
+Rule to analyse nanogate stats
+"""
+rule nanogate_stats_table:
+     input:
+           processed_tables = expand("data/processed/{project}/run_{{run}}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/jaccard_threshold_{jaccard_threshold}/processed_nanogate_{jaccard_threshold}_result_table.csv",
+                  project = PROJECTS,depht = DEPTHS, run = RUNS, constructs=CONSTRUCTS, parts = PARTS, jaccard_threshold =JACCARD_THRESHOLDS,
+                                    error_rate =ERROR_RATES),
+
+           processed_0_threshold_tables =expand("data/processed/{project}/run_{{run}}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/threshold_0/threshold_0_pro.csv",
+            project = PROJECTS,depht = DEPTHS,  run = RUNS, constructs=CONSTRUCTS,parts = PARTS, error_rate =ERROR_RATES)
+
+
+
+     output:
+           per_result ="data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/nanogate_stats.csv",
+           per_construct ="data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/nanogate_constructs_stats.csv",
+
+     params:
+             error_rate = "{error_rate}",
+             run = "{run}",
+             depht = "{depht}",
+             nanogate_results_folder ="data/processed/{project}/run_{run}/nanogate/nanogate_results/"
+     shell:
+           """
+           python scripts/post_processing/positive_table.py positive-analysis\
+           {output.per_result} {output.per_construct} {params.nanogate_results_folder} --error-rate {params.error_rate} --depht {params.depht} \
+           --run {params.run}
+           """
+
+
+
+
+"""
+Rule to analyse bad_reads stats
+"""
+rule nanogate_badreads_stats:
+     input:
+          reads_file =expand('data/processed/{project}/run_{run}/reads/{depht}_depht/{constructs}_constructs/{parts}_parts/{parts}_parts_reads.fastq.gz',
+                              project = PROJECTS, depht = DEPTHS, run = RUNS, constructs=CONSTRUCTS, parts = PARTS, jaccard_threshold =JACCARD_THRESHOLDS,
+                                    error_rate =ERROR_RATES),
+          constructs_file =expand('data/processed/{project}/run_{run}/constructs/{constructs}_constructs/{parts}_parts/{parts}_parts_constructs.fasta',
+                                   project = PROJECTS, depht = DEPTHS, run = RUNS, constructs=CONSTRUCTS, parts = PARTS, jaccard_threshold =JACCARD_THRESHOLDS,
+                                    error_rate =ERROR_RATES),
+          processed_tables = expand("data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/jaccard_threshold_{jaccard_threshold}/bad_reads_{jaccard_threshold}_table.csv",
+                  project = PROJECTS,depht = DEPTHS, run = RUNS,constructs=CONSTRUCTS, parts = PARTS, jaccard_threshold =JACCARD_THRESHOLDS,
+                                    error_rate =ERROR_RATES)
+
+     output:
+           "data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/nanogate_badreads_stats.csv"
+
+     params:
+             error_rate = "{error_rate}",
+             run = "{run}",
+             depht = "{depht}",
+             nanogate_results_folder ="data/processed/{project}/run_{run}/nanogate/nanogate_results/"
+     shell:
+           """
+           python scripts/post_processing/badreads_analysis_table.py bad-reads-stats\
+           {output}  {params.nanogate_results_folder} --error-rate {params.error_rate} --depht {params.depht}
+           """
+
+
+
+
+"""
+Rule to analyse Minimap2 results
+"""
+rule minimap2_run_stats:
+     input:
+          expand('data/processed/{project}/run_{{run}}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_processed_alignment_table.csv'
+                    ,project = PROJECTS, depht= DEPTHS, run= RUNS, constructs = CONSTRUCTS, parts = PARTS)
+
+     output:
+         per_result = "data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_stats.csv",
+         per_construct ="data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_stats_per_construct.csv"
+     shell:
+          """
+          python scripts/post_processing/minimap2_stats.py evaluate-minimap2 {output.per_result} {output.per_construct} {input}
+          """
+
+"""
+Rule to analyse Minimap2 combinatorial assembly results
+"""
+rule minimap2_combinatorial_run_stats:
+     input:
+          expand('data/processed/{project}/run_{run}/minimap2/minimap2_results/{depht}_depht/{constructs}_constructs/{parts}_parts/minimap2_alignments/minimap2_processed_combinatorial_alignment_table.csv'
+                    ,project = PROJECTS, depht= DEPTHS, run= RUNS, constructs = CONSTRUCTS, parts = PARTS)
+
+     output:
+          per_result ="data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_combinatorial_assembly_stats.csv",
+          per_construct ="data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_combinatorial_constructs_assembly_stats.csv"
+
+     shell:
+          """
+          python scripts/post_processing/minimap2_stats.py evaluate-minimap2 {output.per_result} {output.per_construct} {input}
+          """
+
+"""
+Rule to plot nanogate run stats
+"""
+rule positive_plot:
+    input:
+           "data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/nanogate_stats.csv"
+
+    output:
+            precision = "data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_precision.pdf",
+            recall = "data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_recall.pdf",
+            mismatch_per_error = "data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_mismatch_per_error.pdf",
+            good_reads_ratio ="data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_good_reads_ratio.pdf",
+            reads_10_construct = "data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_10_reads_constructs_percentage.pdf",
+            parts_order_ratio ="data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_parts_order_ratio.pdf",
+            parts_order_precision ="data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_parts_order_precision.pdf",
+            parts_order_recall = "data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_parts_order_recall.pdf"
+    shell:
+            """
+           python scripts/visualization/positive_plot.py positive-plot\
+           {input}  {output.precision} {output.recall} {output.mismatch_per_error}\
+           {output.good_reads_ratio} {output.parts_order_ratio} {output.reads_10_construct} {output.parts_order_precision}\
+           {output.parts_order_recall}
+           """
+"""
+Rule to plot nanogate construct plot
+"""
+rule construct_plot:
+    input:
+           "data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/nanogate_constructs_stats.csv"
+
+    output:
+            precision = "data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_precision_per_construct.pdf",
+            recall = "data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_recall_per_construct.pdf",
+            mismatch_per_error = "data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_mismatch_per_error_per_construct.pdf",
+            reads_number ="data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_reads_number_per_construct.pdf",
+            reads_10_constructs = "data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{error_rate}_10_reads_constructs.pdf",
+    shell:
+            """
+           python scripts/visualization/constructs_plot.py constructs-plot\
+           {input}  {output.precision} {output.recall} {output.mismatch_per_error}\
+           {output.reads_number} {output.reads_10_constructs}
+           """
+
+"""
+Rule to plot minimap2 single run stats
+"""
+rule minimap2_run_plots:
+     input:
+          "data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_stats.csv"
+
+     output:
+           preicision_plot ="data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_precision.pdf",
+           recall_plot ="data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_recall.pdf",
+           mapping_quality_plot="data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_mapping_quality.pdf",
+           alignment_score_plot="data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_alignment_score.pdf",
+           real_time_plot="data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_real_time.pdf",
+           cpu_time_plot ="data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_cpu_time.pdf"
+
+
+     shell:
+          """
+           python scripts/visualization/minimap2_plots.py  minimap2-plots {input} {output.preicision_plot} {output.recall_plot}\
+           {output.mapping_quality_plot} {output.alignment_score_plot} {output.real_time_plot} {output.cpu_time_plot}
+          """
+"""
+Rule to generate run stats table
+"""
+rule nanogate_run_stats_table:
+     input:
+           positive_table = "data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/nanogate_stats.csv",
+           processed_tables =expand("data/processed/{project}/run_{run}/nanogate/nanogate_results/{depht}_depht/{error_rate}_error_rate/{constructs}_constructs/{parts}_parts/nanogate_filtered/jaccard_threshold_{jaccard_threshold}/processed_nanogate_{jaccard_threshold}_result_table.csv"
+           ,project = PROJECTS, run = RUNS, depht = DEPTHS, constructs=CONSTRUCTS, parts = PARTS, jaccard_threshold =JACCARD_THRESHOLDS,
+                                    error_rate =ERROR_RATES )
+
+     output:"data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{run}_{depht}_{error_rate}_stats_per_construct.csv"
+
+     params:
+            run = "{run}",
+            nanogate_results_folder ="data/processed/{project}/run_{run}/nanogate/nanogate_results/"
+
+     shell:
+            """
+            python scripts/post_processing/run_stats.py run-stats\
+           {input.positive_table} {output} {params.nanogate_results_folder}  --run {params.run}\
+
+            """
+
+"""
+Rule to generate nanogate summary table
+"""
+
+rule nanogate_summary_table:
+    input:
+         expand("data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/{run}_{depht}_{error_rate}_stats_per_construct.csv",
+                   project = PROJECTS, run = RUNS, depht = DEPTHS, constructs=CONSTRUCTS, parts = PARTS, jaccard_threshold =JACCARD_THRESHOLDS,
+                                    error_rate =ERROR_RATES )
+    output:
+           "data/processed/{project}/nanogate/stats/summary_table.csv"
+    shell:
+        """
+       python scripts/post_processing/summary_table.py summary-table\
+       {output} {input}
+       """
+
+
+"""
+Rule to generate nanogate summary table
+"""
+
+rule nanogate_constructs_summary_table:
+    input:
+         expand("data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/nanogate_constructs_stats.csv",
+                   project = PROJECTS, run = RUNS, depht = DEPTHS, constructs=CONSTRUCTS, parts = PARTS, jaccard_threshold =JACCARD_THRESHOLDS,
+                                    error_rate =ERROR_RATES )
+    output:
+           "data/processed/{project}/nanogate/stats/summary_constructs_table.csv"
+    shell:
+        """
+       python scripts/post_processing/summary_table.py summary-table\
+       {output} {input}
+       """
+"""
+Rule to generate minimap2 summary table
+"""
+rule minimap2_summary_table:
+    input:
+           expand("data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_stats.csv",
+            project = PROJECTS, run = RUNS, depht = DEPTHS, error_rate =ERROR_RATES )
+    output:
+           "data/processed/{project}/minimap2/stats/summary_table.csv"
+    shell:
+       """
+       python scripts/post_processing/summary_table.py summary-table\
+       {output} {input}
+      """
+
+"""
+Rule to generate minimap2 constructs summary table
+"""
+rule minimap2_construct_summary_table:
+    input:
+           expand("data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_stats_per_construct.csv",
+            project = PROJECTS, run = RUNS, depht = DEPTHS, error_rate =ERROR_RATES )
+    output:
+           "data/processed/{project}/minimap2/stats/constructs_summary_table.csv"
+    shell:
+       """
+       python scripts/post_processing/summary_table.py summary-table\
+       {output} {input}
+      """
+
+"""
+Rule to generate minimap2  combinatorial assembly constructs summary table
+"""
+rule minimap2_combinatorial_constructs_summary_table:
+    input:
+           expand("data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_combinatorial_constructs_assembly_stats.csv",
+            project = PROJECTS, run = RUNS, depht = DEPTHS, error_rate =ERROR_RATES )
+
+    output:
+           "data/processed/{project}/minimap2/stats/combinatorial_constructs_summary_table.csv"
+    shell:
+       """
+       python scripts/post_processing/summary_table.py summary-table\
+       {output} {input}
+      """
+
+"""
+Rule to generate minimap2 summary table
+"""
+rule minimap2_combinatorial_summary_table:
+    input:
+           expand("data/processed/{project}/run_{run}/minimap2/minimap2_run_stats/{depht}_depht/minimap2_combinatorial_assembly_stats.csv",
+            project = PROJECTS, run = RUNS, depht = DEPTHS, error_rate =ERROR_RATES )
+    output:
+           "data/processed/{project}/minimap2/stats/combinatorial_summary_table.csv"
+    shell:
+       """
+       python scripts/post_processing/summary_table.py summary-table\
+       {output} {input}
+      """
+
+"""
+Rule to plot stats per run
+"""
+rule summary_plot:
+    input:
+         "data/processed/{project}/nanogate/stats/summary_table.csv"
+
+    output:
+          time_plot ="data/processed/{project}/nanogate/stats/time_plot.pdf",
+          kmer_length_plot ="data/processed/{project}/nanogate/stats/kmer_length.pdf",
+          reads_per_construct ="data/processed/{project}/nanogate/stats/reads_number.pdf"
+    shell:
+       """
+       python scripts/visualization/summary_plot.py run-stats-plot\
+       {input} {output.time_plot} {output.kmer_length_plot} {output.reads_per_construct}
+       """
+
+"""
+Rule to plot minimap2 summary stats
+"""
+rule minimap2_summary_plots:
+     input:
+            "data/processed/{project}/minimap2/stats/summary_table.csv"
+
+     output:
+           precision_plot = "data/processed/{project}/minimap2/stats/precision.pdf",
+           recall_plot = "data/processed/{project}/minimap2/stats/recall.pdf",
+           mapping_quality_plot = "data/processed/{project}/minimap2/stats/mapping_quality.pdf",
+           alignment_score_plot = "data/processed/{project}/minimap2/stats/alignment_score.pdf",
+           real_time_plot = "data/processed/{project}/minimap2/stats/real_time.pdf",
+           cpu_time_plot = "data/processed/{project}/minimap2/stats/cpu_time.pdf"
+
+     shell:
+          """
+           python scripts/visualization/minimap2_plots.py  minimap2-plots {input} {output.precision_plot} {output.recall_plot}\
+           {output.mapping_quality_plot} {output.alignment_score_plot} {output.real_time_plot} {output.cpu_time_plot}
+          """
+"""
+Rule to plot minimap2 summary stats
+"""
+rule minimap2_combinatorial_summary_plots:
+     input:
+            "data/processed/{project}/minimap2/stats/combinatorial_summary_table.csv"
+
+     output:
+           precision_plot = "data/processed/{project}/minimap2/stats/combinatorial_precision.pdf",
+           recall_plot = "data/processed/{project}/minimap2/stats/combinatorial_recall.pdf",
+           mapping_quality_plot = "data/processed/{project}/minimap2/stats/combinatorial_mapping_quality.pdf",
+           alignment_score_plot = "data/processed/{project}/minimap2/stats/combinatorial_alignment_score.pdf",
+           real_time_plot = "data/processed/{project}/minimap2/stats/combinatorial_real_time.pdf",
+           cpu_time_plot = "data/processed/{project}/minimap2/stats/combinatorial_cpu_time.pdf"
+
+     shell:
+          """
+           python scripts/visualization/minimap2_plots.py  minimap2-plots {input} {output.precision_plot} {output.recall_plot}\
+           {output.mapping_quality_plot} {output.alignment_score_plot} {output.real_time_plot} {output.cpu_time_plot}
+          """
+
+"""
+Rule to generate summary jaccard table
+"""
+
+rule summary_jaccard_table:
+    input:
+         expand("data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/nanogate_stats.csv",
+                  project = PROJECTS, depht = DEPTHS, run= RUNS, error_rate =ERROR_RATES)
+    output:
+           "data/processed/{project}/nanogate/stats/jaccard_summary_table.csv"
+
+    shell:
+        """
+       python scripts/post_processing/jaccard_summary_table.py summary-jaccard-table\
+       {output} {input}
+       """
+
+
+"""
+Rule to generate summary bad_reads table
+"""
+
+rule summary_badreads_table:
+    input:
+         expand("data/processed/{project}/run_{run}/nanogate/nanogate_run_stats/{depht}_depht/{error_rate}_error_rate/nanogate_badreads_stats.csv",
+                  project = PROJECTS, depht = DEPTHS, run= RUNS, error_rate =ERROR_RATES)
+    output:
+           "data/processed/{project}/nanogate/stats/bad_reads_summary_table.csv"
+
+    shell:
+        """
+       python scripts/post_processing/jaccard_summary_table.py summary-jaccard-table\
+       {output} {input}
+       """
+
+
+"""
+Rule to generate summary jaccard plots
+"""
+
+rule summary_jaccard_plots:
+    input:
+          'data/processed/{project}/nanogate/stats/jaccard_summary_table.csv'
+    output:
+            precision = "data/processed/{project}/nanogate/stats/precision_per_result.pdf",
+            recall = "data/processed/{project}/nanogate/stats/recall_per_result.pdf",
+            mismatch_per_error ="data/processed/{project}/nanogate/stats/mismatch_per_error.pdf",
+            good_reads_ratio = "data/processed/{project}/nanogate/stats/good_reads_ratio.pdf",
+            reads_10_construct = "data/processed/{project}/nanogate/stats/10_reads_constructs_percentage.pdf",
+            parts_order_ratio ="data/processed/{project}/nanogate/stats/parts_order_ratio.pdf",
+            parts_order_precision ="data/processed/{project}/nanogate/stats/parts_order_precision.pdf",
+            parts_order_recall = "data/processed/{project}/nanogate/stats/parts_order_recall.pdf"
+
+    shell:
+           """
+           python scripts/visualization/positive_plot.py positive-plot\
+           {input} {output.precision} {output.recall} {output.mismatch_per_error}\
+           {output.good_reads_ratio} {output.reads_10_construct} {output.parts_order_ratio} {output.parts_order_precision}\
+           {output.parts_order_recall}
+           """
+
+"""
+Rule to generate summary constructs plots
+"""
+
+rule summary_constructs_plots:
+    input:
+          'data/processed/{project}/nanogate/stats/summary_constructs_table.csv'
+    output:
+            precision = "data/processed/{project}/nanogate/stats/precision_per_construct.pdf",
+            recall = "data/processed/{project}/nanogate/stats/recall_per_construct.pdf",
+            mismatch_per_error ="data/processed/{project}/nanogate/stats/mismatch_per_error_per_construct.pdf",
+            reads_number = "data/processed/{project}/nanogate/stats/reads_number_per_construct.pdf",
+            reads_10_constructs = "data/processed/{project}/nanogate/stats/10_reads_constructs.pdf",
+    shell:
+            """
+           python scripts/visualization/constructs_plot.py constructs-plot\
+           {input} {output.precision} {output.recall} {output.mismatch_per_error} \
+           {output.reads_number} {output.reads_10_constructs}
+           """
+
+
+
+"""
+Rule to generate summary bad reads plots
+"""
+
+rule summary_badreads_plots:
+    input:
+          'data/processed/{project}/nanogate/stats/bad_reads_summary_table.csv'
+    output:
+            contaminant_discovery = "data/processed/{project}/nanogate/stats/contaminant_discovery.pdf",
+
+    shell:
+            """
+           python scripts/visualization/badreads_plot.py badreads-plots\
+           {input} {output.contaminant_discovery}
+           """
+
+"""
+Rule to create comparison tables
+"""
+rule comparison_tables:
+    input:
+         minimap2_stats="data/processed/{project}/minimap2/stats/summary_table.csv",
+         minimap2_combinatorial = "data/processed/{project}/minimap2/stats/combinatorial_summary_table.csv",
+         nanogate_true_postives = "data/processed/{project}/nanogate/stats/jaccard_summary_table.csv",
+         nanogate_time_stats = "data/processed/{project}/nanogate/stats/summary_table.csv",
+         minimap2_construct_stats = "data/processed/{project}/minimap2/stats/constructs_summary_table.csv",
+         nanogate_constructs_stats = "data/processed/{project}/nanogate/stats/summary_constructs_table.csv",
+         combinatorial_constructs_stats = 'data/processed/{project}/minimap2/stats/combinatorial_constructs_summary_table.csv'
+    output:
+          time_comparison = "data/processed/{project}/comparison/stats/time_comparison.csv",
+          true_positives_comparison = "data/processed/{project}/comparison/stats/true_positives_comparison.csv",
+          construct_comparison ="data/processed/{project}/comparison/stats/construct_comparison.csv"
+
+    shell:
+         """
+         python  scripts/post_processing/comparisons_tables.py comparison-table \
+         {input.minimap2_stats} {input.nanogate_true_postives} {input.nanogate_time_stats} {input.minimap2_combinatorial} \
+         {input.minimap2_construct_stats} {input.nanogate_constructs_stats} {input.combinatorial_constructs_stats} \
+         {output.time_comparison} {output.true_positives_comparison} {output.construct_comparison}
+         """
+
+"""
+Rule to plot comparisons
+"""
+rule comparison_plot:
+    input:
+          time_comparison = "data/processed/{project}/comparison/stats/time_comparison.csv",
+          true_positives_comparison = "data/processed/{project}/comparison/stats/true_positives_comparison.csv",
+          constructs_comparison ="data/processed/{project}/comparison/stats/construct_comparison.csv"
+    output:
+           parts_5_precision_plot = "data/processed/{project}/comparison/stats/5_parts_precision_comparison.pdf",
+           parts_5_recall_plot = "data/processed/{project}/comparison/stats/5_parts_recall_comparison.pdf",
+           parts_5_construct_precision_plot =  "data/processed/{project}/comparison/stats/5_parts_construct_precision_comparison.pdf",
+           parts_5_construct_recall_plot = "data/processed/{project}/comparison/stats/5_parts_recall_construct_comparison.pdf",
+           parts_5_time_plot = "data/processed/{project}/comparison/stats/5_parts_time_comparison.pdf",
+
+           minimap2_nanogate_precision_plot ="data/processed/{project}/comparison/stats/minimap2_nanogate_precision_comparison.pdf",
+           minimap2_recall_precision_plot ="data/processed/{project}/comparison/stats/minimap2_nanogate_recall_comparison.pdf",
+           minimap2_nanogate_time_plot = "data/processed/{project}/comparison/stats/minimap2_nanogate_time_comparison.pdf"
+    shell:
+         """
+         python scripts/visualization/comparison_plot.py comparisons-plot \
+         {input.true_positives_comparison} {input.constructs_comparison} {input.time_comparison} \
+         {output.parts_5_precision_plot} {output.parts_5_recall_plot} {output.parts_5_construct_precision_plot} \
+         {output.parts_5_construct_recall_plot}  {output.parts_5_time_plot} \
+         {output.minimap2_nanogate_precision_plot} {output.minimap2_recall_precision_plot} {output.minimap2_nanogate_time_plot}
+         """

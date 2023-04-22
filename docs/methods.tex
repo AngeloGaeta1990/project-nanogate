@@ -1,0 +1,62 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%	Authors: Angelo Gaeta, Giovanni Stracquadanio
+%   Manuscript version: 0.0.1-draft
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[11pt, a4paper]{article}
+\usepackage{pdfpages}
+\usepackage{algorithmicx}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{multirow}
+\usepackage{subcaption}
+\usepackage{graphicx}   
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[left=2cm, right=5cm, top=2cm]{geometry}
+\usepackage{helvet}
+\usepackage[font=small,labelfont=bf]{caption}
+\renewcommand{\familydefault}{\sfdefault}
+\newcommand{\Angelo}[1]{\textcolor{blue}{\textbf{AG:} \emph{#1}}}
+\usepackage[backend=bibtex, bibencoding=utf8, sorting=none, giveninits=true, doi=false,url=false]{biblatex}
+
+\addbibresource{bibliography.bib}
+
+\begin{document}
+\title{DNA sequence verification with Oxford Nanopore technology}
+\author{Angelo Gaeta
+        Giovanni Stracquadanio
+        \thanks{Corresponding author. School of Biological Sciences,
+        The University of Edinburgh, Edinburgh EH9 3BF, United Kingdom}}
+
+\maketitle
+
+
+\section{Methods}
+Here we present a new algorithm for DNA sequence verification after assembly. Our algorithm relies on the Oxford Nanopore technology[...] 
+because of the generation of long reads(up to 1 Mbp)[...] and the possibility of sequencing from a bulk of different DNA sequences. 
+The input includes the reads and the assembled parts DNA sequences and a list of the cloned ones. 
+The algorithm takes advantage of the Sourmash [...] hash function to turn reads and parts DNA sequences into hash codes, then evaluates which are the parts included in each read.
+
+\subsection{A hash method for sequence verification}
+A hash function is an algorithm applied in cryptography to map data of arbitrary size to a bit string of a fixed size[...]. 
+A hash function is unidirectional (converts data to bits, but not vice versa), avoid collisions( different data mapping to the same bit), has an avalanche effect(small changes to the data extensively change the hash code) and is quick to compute
+Hash functions speed up the analysis of sequencing data by reducing the time complexity $(O)$. 
+Considering $s_1$ and $s_2$ as two different DNA sequences of length $l$, the time complexity $O$ required to establish the equality criteria is
+at maximum $O(n)$ with $n=l$. 
+k-mers, defined as all the possible substring of length $k$ of a biological sequence, are often employed to simplify the data analysis of 
+long DNA sequences such as genomes or biological constructs.
+Hash functions as Sourmash[...] convert k-mer sequences into a numeric value, e.g. a 32-bit integer reducing the time complexity to $O(1)$. Indeed, for integer values, 
+there is no need for a character-by-character comparison to establish the equality criteria. 
+The conversion of genomes or synthetic biological constructs into hash codes speed up the screening for genes or parts, which are converted into hash code as well. 
+
+The Jaccard coefficient :
+$J(h_1,h_2)= |h_1 \cap h_2|/h_1 \cup h_2$
+Where $h_1$ and $h_2$ are two different sets of hash codes computed from the DNA sequences $s_1$ and $s_2$, measures the similarity between $s_1$ and $s_2$.
+If the Jaccard coefficient $j = 1$ $h_1$ and $h_2$ completely overlap as the sequences $s_1$ and $s_2$ they derives from. Viceversa, $j=0$ indicates no overlap. 
+ 
+The Jaccard containment coefficient  :
+$Jaccard containment coefficient$
+Where $h_1$ and $h_2$ are two different sets of hash codes computed from the DNA sequences $s_1$ and $s_2$, measures if $h_2$ contains $h_1$. $j_c =1$ establish the complete 
+inclusion of h_1 in h_2 and  j=0  establish that h_2 do not contains h_1.
+By assessing the $j_c$, we can discriminate either a genome includes genes, either synthetic constructs include parts.

@@ -1,0 +1,27 @@
+project: "no_jaccard_fast"
+genbank: "yeast_chromosome_xiv.gb"
+run: 1
+
+generate_testbeds:
+    cds_number : 50
+    constructs_number: [10,50,100]
+    parts : [5,10,20]
+    constructs_similarity : 0.4
+    parts_similarity : 0.7
+    mutation_method : "last"
+
+badreads:
+    quantity : [50x]
+    error_model: "nanopore"
+    qscore_model: "nanopore"
+    glitches: "0,0,0"
+    junk_reads: 0
+    random_reads: 0
+    chimeras: 0
+    identity: 95,100,4
+    start_adapter_seq: ' "" '
+    end_adapter_seq: ' "" '
+
+nanogate:
+     error_rate : ["001"]
+     jaccard_thresholds: ["00"]
